@@ -164,28 +164,30 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+# Создаём приложение на верхнем уровне для деплоя
+application = Application.builder().token(BOT_TOKEN).build()
+
+conv_handler = ConversationHandler(
+    entry_points=[CommandHandler("start", start)],
+    states={
+        NAME:       [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
+        AGE:        [MessageHandler(filters.TEXT & ~filters.COMMAND, get_age)],
+        EXPERIENCE: [CallbackQueryHandler(get_experience)],
+        ROLE:       [CallbackQueryHandler(get_role)],
+    },
+    fallbacks=[CommandHandler("cancel", cancel)],
+    per_message=False,
+)
+
+application.add_handler(conv_handler)
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, unknown))
+
+
 async def main():
-    app = Application.builder().token(BOT_TOKEN).build()
-
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
-        states={
-            NAME:       [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
-            AGE:        [MessageHandler(filters.TEXT & ~filters.COMMAND, get_age)],
-            EXPERIENCE: [CallbackQueryHandler(get_experience)],
-            ROLE:       [CallbackQueryHandler(get_role)],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-        per_message=False,
-    )
-
-    app.add_handler(conv_handler)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, unknown))
-
     logger.info("Бот KING запущен...")
-    await app.initialize()
-    await app.start()
-    await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
 
     await asyncio.Event().wait()
 
